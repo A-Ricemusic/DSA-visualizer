@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decode Ways — Visual DP Guide</title>
+  <style>
+    :root {
+      --ink: #12211c;
+      --muted: #5e6d66;
+      --paper: #f4f1e8;
+      --card: #fffdf7;
+      --green: #1f6b4f;
+      --green-2: #2f8a67;
+      --mint: #dff3e8;
+      --lime: #d9f99d;
+      --blue: #2d5d7b;
+      --blue-soft: #e4f1f7;
+      --orange: #e46f3d;
+      --orange-soft: #fff0e7;
+      --red: #bb3e3e;
+      --red-soft: #fde8e5;
+      --line: #d7d5ca;
+      --shadow: 0 16px 40px rgba(18, 33, 28, .09);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 90% 4%, rgba(217,249,157,.38), transparent 24rem),
+        linear-gradient(180deg, #f8f6ee 0, var(--paper) 32rem);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+    code, .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 0 max(24px, calc((100vw - 1180px) / 2));
+      color: white;
+      background: rgba(18, 33, 28, .95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 850; letter-spacing: -.02em; }
+    .brand-mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; color: var(--ink); background: var(--lime); }
+    .navlinks { display: flex; gap: 23px; color: #d9e4df; font-size: 14px; }
+    .navlinks a { text-decoration: none; }
+    .navlinks a:hover { color: var(--lime); }
+
+    main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    section { scroll-margin-top: 82px; }
+    .hero { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; padding: 78px 0 56px; }
+    .eyebrow { display: inline-flex; gap: 8px; align-items: center; padding: 7px 12px; border: 1px solid #cbd3c4; border-radius: 999px; color: var(--green); background: rgba(255,255,255,.55); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green-2); box-shadow: 0 0 0 4px rgba(47,138,103,.14); }
+    h1 { margin: 20px 0 18px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(48px, 6vw, 78px); line-height: .98; letter-spacing: -.045em; font-weight: 600; }
+    .hero-copy { max-width: 660px; margin: 0 0 28px; color: var(--muted); font-size: 19px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .btn { border: 0; border-radius: 12px; padding: 12px 17px; font-weight: 800; transition: .18s transform, .18s background; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { color: white; background: var(--green); box-shadow: 0 8px 20px rgba(31,107,79,.22); }
+    .btn-primary:hover { background: #175b42; }
+    .btn-secondary { color: var(--ink); background: white; border: 1px solid var(--line); }
+
+    .mental-card { position: relative; padding: 28px; overflow: hidden; color: white; background: var(--ink); border-radius: 28px; box-shadow: var(--shadow); }
+    .mental-card::after { content: ""; position: absolute; width: 170px; height: 170px; right: -70px; top: -70px; border-radius: 50%; background: rgba(217,249,157,.14); }
+    .mental-label { color: var(--lime); font-size: 12px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+    .mental-card h2 { margin: 10px 0 20px; font-family: Georgia, serif; font-size: 29px; line-height: 1.15; font-weight: 500; }
+    .mini-track { display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; gap: 8px; }
+    .mini-cell { position: relative; padding: 10px 5px; text-align: center; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.15); border-radius: 12px; }
+    .mini-cell strong { display: block; font-size: 21px; color: white; }
+    .mini-cell small { color: #a8bab1; }
+    .mini-cell.on { border-color: var(--lime); background: rgba(217,249,157,.13); }
+    .mini-note { margin: 18px 0 0; color: #c5d2cc; font-size: 14px; }
+
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin: 42px 0 22px; }
+    .kicker { color: var(--green); font-size: 12px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+    h2 { margin: 5px 0 0; font-family: Georgia, serif; font-size: clamp(32px, 4vw, 48px); line-height: 1.08; letter-spacing: -.025em; font-weight: 600; }
+    .section-intro { max-width: 530px; margin: 0; color: var(--muted); }
+
+    .rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .rule { padding: 24px; background: rgba(255,253,247,.83); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 8px 25px rgba(18,33,28,.04); }
+    .rule-num { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 17px; border-radius: 11px; background: var(--mint); color: var(--green); font-weight: 900; }
+    .rule h3 { margin: 0 0 7px; font-size: 17px; }
+    .rule p { margin: 0; color: var(--muted); font-size: 14px; }
+    .rule code { color: var(--green); font-weight: 750; }
+
+    .alphabet-wrap { margin-top: 16px; padding: 17px 20px; background: var(--ink); color: white; border-radius: 18px; }
+    .alphabet-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 13px; font-size: 13px; font-weight: 800; }
+    .alphabet-title span:last-child { color: #9fb2a9; font-weight: 500; }
+    .alphabet { display: grid; grid-template-columns: repeat(13, 1fr); gap: 5px; }
+    .letter { padding: 7px 2px; text-align: center; border-radius: 7px; background: rgba(255,255,255,.06); font-size: 12px; }
+    .letter b { color: var(--lime); }
+
+    .lab { margin-top: 86px; padding: clamp(22px, 4vw, 40px); background: var(--card); border: 1px solid var(--line); border-radius: 30px; box-shadow: var(--shadow); }
+    .lab-top { display: flex; align-items: end; justify-content: space-between; gap: 30px; }
+    .input-area { width: min(460px, 100%); }
+    .input-label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .input-row { display: flex; gap: 8px; }
+    #decodeInput { min-width: 0; flex: 1; height: 48px; padding: 0 15px; color: var(--ink); background: white; border: 2px solid #cfd4ca; border-radius: 12px; font: 800 19px "SFMono-Regular", Consolas, monospace; outline: none; }
+    #decodeInput:focus { border-color: var(--green-2); box-shadow: 0 0 0 4px rgba(47,138,103,.12); }
+    .presets { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+    .preset { padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: #f7f6ef; color: var(--muted); font: 700 12px "SFMono-Regular", Consolas, monospace; }
+    .preset:hover, .preset.active { color: var(--green); border-color: #9fc9b6; background: var(--mint); }
+    .input-error { min-height: 20px; margin-top: 6px; color: var(--red); font-size: 13px; font-weight: 700; }
+
+    .result-banner { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin: 28px 0 18px; padding: 18px 20px; border-radius: 17px; color: white; background: var(--ink); }
+    .answer-number { display: grid; place-items: center; width: 62px; height: 62px; border-radius: 17px; color: var(--ink); background: var(--lime); font-family: Georgia, serif; font-size: 35px; font-weight: 700; }
+    .result-banner h3 { margin: 0 0 2px; font-size: 17px; }
+    .result-banner p { margin: 0; color: #afc0b7; font-size: 13px; }
+    .complexity { display: flex; gap: 8px; }
+    .complexity span { padding: 6px 9px; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; color: #cfe0d7; font: 700 11px monospace; }
+
+    .stepper-grid { display: grid; grid-template-columns: 1.35fr .65fr; gap: 18px; min-width: 0; }
+    .visual-panel, .explain-panel { min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: #faf9f3; }
+    .panel-label { margin-bottom: 13px; color: var(--muted); font-size: 11px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
+    .dp-strip { display: flex; gap: 7px; padding: 5px 0 16px; overflow-x: auto; }
+    .dp-cell { flex: 1 0 62px; min-width: 62px; padding: 10px 6px; text-align: center; border: 1px solid #d2d5cc; border-radius: 12px; background: white; transition: .2s; }
+    .dp-cell .index { display: block; color: #8a968f; font-size: 10px; }
+    .dp-cell .prefix { display: block; min-height: 19px; color: var(--muted); font: 700 11px monospace; overflow: hidden; text-overflow: ellipsis; }
+    .dp-cell .value { display: block; margin-top: 5px; font-size: 22px; font-weight: 900; }
+    .dp-cell.future { opacity: .35; }
+    .dp-cell.current { color: var(--green); border: 2px solid var(--green-2); background: var(--mint); transform: translateY(-3px); box-shadow: 0 8px 16px rgba(31,107,79,.12); }
+    .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .choice { position: relative; min-height: 137px; padding: 15px; border-radius: 14px; border: 1px solid var(--line); background: white; }
+    .choice.valid { border-color: #8fc4ab; background: #f1fbf5; }
+    .choice.invalid { border-color: #e8b9b0; background: #fff6f3; }
+    .choice-title { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: .05em; }
+    .status { padding: 3px 7px; border-radius: 999px; font-size: 9px; }
+    .valid .status { color: var(--green); background: var(--mint); }
+    .invalid .status { color: var(--red); background: var(--red-soft); }
+    .choice-token { margin: 11px 0 4px; font: 900 24px monospace; }
+    .choice-copy { color: var(--muted); font-size: 12px; }
+    .choice-math { margin-top: 10px; font: 800 13px monospace; }
+    .valid .choice-math { color: var(--green); }
+    .invalid .choice-math { color: var(--red); }
+
+    .formula-box { margin: 12px 0; padding: 14px; color: #dce9e2; background: var(--ink); border-radius: 13px; font: 700 13px/1.65 monospace; }
+    .formula-box .hot { color: var(--lime); }
+    .step-explanation { min-height: 115px; color: var(--muted); font-size: 14px; }
+    .step-explanation strong { color: var(--ink); }
+    .controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 15px; }
+    .control-btn { padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--ink); font-weight: 800; }
+    .control-btn:disabled { cursor: not-allowed; opacity: .4; }
+    .step-count { color: var(--muted); font: 700 12px monospace; }
+
+    .paths { margin-top: 18px; padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: #faf9f3; }
+    .paths-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 13px; }
+    .paths-head .panel-label { margin: 0; }
+    .path-count { color: var(--green); font-size: 12px; font-weight: 850; }
+    .path-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .path-card { padding: 13px; border: 1px solid #d9ddd3; border-radius: 12px; background: white; }
+    .grouping { display: flex; gap: 5px; flex-wrap: wrap; }
+    .group-chip { padding: 3px 7px; border-radius: 7px; color: var(--blue); background: var(--blue-soft); font: 800 12px monospace; }
+    .decoded { margin-top: 8px; color: var(--green); font-weight: 900; font-size: 17px; letter-spacing: .08em; }
+    .too-many { color: var(--muted); font-size: 13px; }
+
+    .why { display: grid; grid-template-columns: .8fr 1.2fr; gap: 18px; margin-top: 86px; }
+    .why-copy { padding: 28px; color: white; background: var(--green); border-radius: 24px; }
+    .why-copy h2 { font-size: 37px; }
+    .why-copy p { color: #d7eee3; }
+    .definition { margin-top: 22px; padding: 15px; border-radius: 13px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); }
+    .definition code { color: var(--lime); font-weight: 850; }
+    .staircase { padding: 26px; border-radius: 24px; background: var(--card); border: 1px solid var(--line); }
+    .stairs { display: flex; align-items: flex-end; gap: 8px; min-height: 230px; padding: 10px 5px 0; }
+    .stair { flex: 1; display: flex; flex-direction: column; justify-content: end; align-items: center; gap: 8px; min-width: 60px; padding: 12px 5px; border-radius: 12px 12px 3px 3px; color: white; background: var(--blue); }
+    .stair:nth-child(even) { background: var(--green-2); }
+    .stair strong { font-size: 23px; }
+    .stair span { font: 700 10px monospace; opacity: .8; }
+    .stairs-caption { margin: 15px 0 0; color: var(--muted); font-size: 13px; }
+
+    .zero-section { margin-top: 86px; }
+    .zero-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; }
+    .zero-card { position: relative; padding: 22px; overflow: hidden; border-radius: 18px; border: 1px solid var(--line); background: var(--card); }
+    .zero-card.good { border-top: 5px solid var(--green-2); }
+    .zero-card.bad { border-top: 5px solid var(--red); }
+    .zero-example { font: 900 29px monospace; }
+    .zero-break { display: flex; gap: 5px; margin: 12px 0; }
+    .zero-break span { padding: 4px 8px; border-radius: 7px; background: var(--blue-soft); font: 800 12px monospace; }
+    .zero-card.bad .zero-break span { background: var(--red-soft); color: var(--red); }
+    .zero-card p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .examples-section { margin-top: 86px; }
+    .examples { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    details { border: 1px solid var(--line); border-radius: 16px; background: var(--card); overflow: hidden; }
+    summary { display: flex; align-items: center; justify-content: space-between; gap: 14px; list-style: none; cursor: pointer; padding: 18px 20px; font-weight: 850; }
+    summary::-webkit-details-marker { display: none; }
+    .example-input { font: 900 18px monospace; }
+    .example-answer { padding: 4px 9px; border-radius: 999px; color: var(--green); background: var(--mint); font-size: 11px; }
+    .detail-body { padding: 0 20px 18px; color: var(--muted); font-size: 14px; }
+    .detail-body code { color: var(--green); font-weight: 800; }
+
+    .code-section { margin-top: 86px; }
+    .code-grid { display: grid; grid-template-columns: 1fr .75fr; gap: 18px; }
+    .code-card { overflow: hidden; border-radius: 20px; background: #17221e; color: #d9e7df; box-shadow: var(--shadow); }
+    .code-top { display: flex; justify-content: space-between; padding: 13px 18px; border-bottom: 1px solid rgba(255,255,255,.08); color: #9eb0a7; font-size: 12px; }
+    pre { margin: 0; padding: 21px; overflow-x: auto; font-size: 13px; line-height: 1.85; }
+    .kw { color: #89c7ff; } .fn { color: #d9f99d; } .str { color: #f7b58e; } .comment { color: #84958d; }
+    .code-notes { display: grid; gap: 10px; }
+    .code-note { display: grid; grid-template-columns: 34px 1fr; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 15px; background: var(--card); }
+    .code-note b:first-child { display: grid; place-items: center; height: 34px; border-radius: 10px; color: var(--green); background: var(--mint); }
+    .code-note h3 { margin: 1px 0 4px; font-size: 14px; }
+    .code-note p { margin: 0; color: var(--muted); font-size: 12px; }
+
+    .quiz { margin: 86px 0 90px; padding: 30px; border-radius: 24px; color: white; background: var(--ink); }
+    .quiz h2 { font-size: 35px; }
+    .quiz p { color: #b9c9c1; }
+    .quiz-options { display: flex; flex-wrap: wrap; gap: 9px; margin: 18px 0 12px; }
+    .quiz-option { padding: 10px 15px; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; color: white; background: rgba(255,255,255,.06); font-weight: 800; }
+    .quiz-option:hover { border-color: var(--lime); }
+    .quiz-option.correct { color: var(--ink); background: var(--lime); border-color: var(--lime); }
+    .quiz-option.wrong { background: var(--red); border-color: var(--red); }
+    #quizFeedback { min-height: 25px; color: var(--lime); font-weight: 750; }
+
+    footer { padding: 25px 16px 45px; text-align: center; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
+
+    @media (max-width: 850px) {
+      .navlinks { display: none; }
+      .hero, .why, .code-grid { grid-template-columns: 1fr; }
+      .hero { padding-top: 50px; }
+      .rules, .zero-grid { grid-template-columns: 1fr; }
+      .alphabet { grid-template-columns: repeat(7, 1fr); }
+      .lab-top { align-items: start; flex-direction: column; }
+      .input-area { width: 100%; }
+      .stepper-grid { grid-template-columns: 1fr; }
+      .path-list { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px) {
+      main { width: min(100% - 20px, 1180px); }
+      .topbar { padding: 0 14px; }
+      h1 { font-size: 48px; }
+      .section-head { align-items: start; flex-direction: column; gap: 10px; }
+      .result-banner { grid-template-columns: auto 1fr; }
+      .complexity { grid-column: 1 / -1; }
+      .choice-grid, .examples { grid-template-columns: 1fr; }
+      .path-list { grid-template-columns: 1fr; }
+      .lab { padding: 16px; border-radius: 20px; }
+      .visual-panel, .explain-panel { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">26</span><span>Decode Ways Lab</span></div>
+    <nav class="navlinks" aria-label="Page sections">
+      <a href="#rules">The rules</a>
+      <a href="#visualizer">Visualizer</a>
+      <a href="#zeros">Zero clinic</a>
+      <a href="#code">Python</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <span class="eyebrow">Dynamic programming · Medium</span>
+        <h1>Decode Ways,<br>made visible.</h1>
+        <p class="hero-copy">A number can become a letter in one or two digits. The trick is not listing every message—it is counting how many valid paths reach each position.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#visualizer">Open the visualizer ↓</a>
+          <a class="btn btn-secondary" href="#code">Jump to Python</a>
+        </div>
+      </div>
+      <aside class="mental-card" aria-label="Core mental model">
+        <div class="mental-label">The whole idea</div>
+        <h2>At each digit, look back one step and two steps.</h2>
+        <div class="mini-track">
+          <div class="mini-cell"><small>empty</small><strong>1</strong></div>
+          <div class="mini-cell"><small>“2”</small><strong>1</strong></div>
+          <div class="mini-cell"><small>“22”</small><strong>2</strong></div>
+          <div class="mini-cell on"><small>“226”</small><strong>3</strong></div>
+        </div>
+        <p class="mini-note"><strong>Why 3?</strong> The final <code>6</code> adds 2 paths, and the valid pair <code>26</code> adds 1 more.</p>
+      </aside>
+    </section>
+
+    <section id="rules">
+      <div class="section-head">
+        <div><div class="kicker">01 · First principles</div><h2>Only three rules</h2></div>
+        <p class="section-intro">Every decision in the algorithm comes from these rules. If you can check one digit and two digits, you can solve the problem.</p>
+      </div>
+      <div class="rules">
+        <article class="rule"><div class="rule-num">1</div><h3>One digit: 1–9</h3><p>A single non-zero digit is a letter. <code>7 → G</code>. A single <code>0</code> is never a letter.</p></article>
+        <article class="rule"><div class="rule-num">2</div><h3>Two digits: 10–26</h3><p>A pair is a letter only when its number falls in this range. <code>12 → L</code>, but <code>27</code> is too large.</p></article>
+        <article class="rule"><div class="rule-num">3</div><h3>Add both valid paths</h3><p>If both choices work, add the path counts that existed before them. That repeated work is exactly what DP saves.</p></article>
+      </div>
+      <div class="alphabet-wrap">
+        <div class="alphabet-title"><span>The decoder ring</span><span>Numbers outside 1–26 are invalid</span></div>
+        <div class="alphabet" id="alphabet"></div>
+      </div>
+    </section>
+
+    <section class="lab" id="visualizer">
+      <div class="lab-top">
+        <div><div class="kicker">02 · Interactive lab</div><h2>Walk through the count</h2></div>
+        <div class="input-area">
+          <label class="input-label" for="decodeInput">Try any digit string (max 12)</label>
+          <div class="input-row"><input id="decodeInput" inputmode="numeric" maxlength="12" value="226" aria-describedby="inputError"><button class="btn btn-primary" id="runBtn">Visualize</button></div>
+          <div class="presets" aria-label="Example inputs">
+            <button class="preset" data-value="12">12</button><button class="preset active" data-value="226">226</button><button class="preset" data-value="06">06</button><button class="preset" data-value="11106">11106</button><button class="preset" data-value="1012">1012</button>
+          </div>
+          <div class="input-error" id="inputError" role="alert"></div>
+        </div>
+      </div>
+
+      <div class="result-banner">
+        <div class="answer-number" id="answerNumber">3</div>
+        <div><h3 id="answerTitle">“226” has 3 valid decodings</h3><p>The last DP cell is the answer.</p></div>
+        <div class="complexity"><span>TIME O(n)</span><span>SPACE O(n) shown</span></div>
+      </div>
+
+      <div class="stepper-grid">
+        <div class="visual-panel">
+          <div class="panel-label">DP table · dp[i] = ways to decode the first i digits</div>
+          <div class="dp-strip" id="dpStrip"></div>
+          <div class="choice-grid">
+            <div class="choice" id="oneChoice"></div>
+            <div class="choice" id="twoChoice"></div>
+          </div>
+        </div>
+        <aside class="explain-panel">
+          <div class="panel-label">What is happening?</div>
+          <div class="formula-box" id="formulaBox"></div>
+          <div class="step-explanation" id="stepExplanation"></div>
+          <div class="controls">
+            <button class="control-btn" id="prevBtn">← Back</button>
+            <span class="step-count" id="stepCount"></span>
+            <button class="control-btn" id="nextBtn">Next →</button>
+          </div>
+        </aside>
+      </div>
+
+      <div class="paths">
+        <div class="paths-head"><div class="panel-label">The actual valid paths</div><div class="path-count" id="pathCount"></div></div>
+        <div class="path-list" id="pathList"></div>
+      </div>
+    </section>
+
+    <section class="why">
+      <div class="why-copy">
+        <div class="kicker" style="color:var(--lime)">03 · Why DP?</div>
+        <h2>Save the answer to every smaller prefix.</h2>
+        <p>When a choice lands at position <em>i</em>, we do not recount everything before it. We reuse the number already stored there.</p>
+        <div class="definition"><code>dp[i]</code> means: “How many valid ways decode the first <code>i</code> characters?”</div>
+      </div>
+      <div class="staircase">
+        <div class="panel-label">Think of paths climbing stairs</div>
+        <div class="stairs">
+          <div class="stair" style="height:76px"><strong>1</strong><span>empty</span></div>
+          <div class="stair" style="height:105px"><strong>1</strong><span>2</span></div>
+          <div class="stair" style="height:145px"><strong>2</strong><span>22</span></div>
+          <div class="stair" style="height:200px"><strong>3</strong><span>226</span></div>
+        </div>
+        <p class="stairs-caption">A valid 1-digit letter is a one-step jump. A valid 2-digit letter is a two-step jump. Count the ways to land on the final stair.</p>
+      </div>
+    </section>
+
+    <section class="zero-section" id="zeros">
+      <div class="section-head">
+        <div><div class="kicker">04 · The common trap</div><h2>Zero needs a partner</h2></div>
+        <p class="section-intro"><code>0</code> has no letter by itself. It only works inside <code>10</code> or <code>20</code>. Treat this as a rule check, not a special patch.</p>
+      </div>
+      <div class="zero-grid">
+        <article class="zero-card good"><div class="zero-example">“10”</div><div class="zero-break"><span>10</span><span>→ J</span></div><p>One valid path. The single <code>0</code> fails, but the pair <code>10</code> works.</p></article>
+        <article class="zero-card good"><div class="zero-example">“101”</div><div class="zero-break"><span>10</span><span>1</span><span>→ JA</span></div><p>Still one path. You cannot split it as <code>1 | 0 | 1</code>.</p></article>
+        <article class="zero-card bad"><div class="zero-example">“06”</div><div class="zero-break"><span>0 ✕</span><span>06 ✕</span></div><p>Zero paths. Leading zero is invalid, and <code>06</code> is not a valid pair.</p></article>
+      </div>
+    </section>
+
+    <section class="examples-section">
+      <div class="section-head">
+        <div><div class="kicker">05 · Worked examples</div><h2>Build your pattern sense</h2></div>
+        <p class="section-intro">Open each example and predict the answer first. Edge cases become much easier once you see which local rule blocks the path.</p>
+      </div>
+      <div class="examples">
+        <details open><summary><span class="example-input">s = “12”</span><span class="example-answer">2 ways</span></summary><div class="detail-body"><code>1 | 2 → AB</code> and <code>12 → L</code>. Both the single digit and pair checks succeed.</div></details>
+        <details><summary><span class="example-input">s = “226”</span><span class="example-answer">3 ways</span></summary><div class="detail-body"><code>2|2|6 → BBF</code>, <code>22|6 → VF</code>, and <code>2|26 → BZ</code>. The pair <code>26</code> is just inside the limit.</div></details>
+        <details><summary><span class="example-input">s = “27”</span><span class="example-answer">1 way</span></summary><div class="detail-body"><code>2 | 7 → BG</code> works, but <code>27</code> is larger than 26. A string without zeros can still have only one decoding.</div></details>
+        <details><summary><span class="example-input">s = “11106”</span><span class="example-answer">2 ways</span></summary><div class="detail-body"><code>1|1|10|6 → AAJF</code> and <code>11|10|6 → KJF</code>. The zero forces the preceding <code>1</code> to join it.</div></details>
+      </div>
+    </section>
+
+    <section class="code-section" id="code">
+      <div class="section-head">
+        <div><div class="kicker">06 · Translate to code</div><h2>The Python solution</h2></div>
+        <p class="section-intro">The code is short because the table already captured all the reasoning. Each loop performs exactly the two rule checks from above.</p>
+      </div>
+      <div class="code-grid">
+        <div class="code-card">
+          <div class="code-top"><span>solution.py</span><span>O(n) time · O(n) space</span></div>
+<pre><code><span class="kw">class</span> <span class="fn">Solution</span>:
+    <span class="kw">def</span> <span class="fn">numDecodings</span>(self, s: str) -> int:
+        <span class="comment"># dp[i] = ways to decode the first i chars</span>
+        dp = [<span class="str">0</span>] * (len(s) + <span class="str">1</span>)
+        dp[<span class="str">0</span>] = <span class="str">1</span>  <span class="comment"># one way to decode nothing</span>
+
+        <span class="kw">for</span> i <span class="kw">in</span> range(<span class="str">1</span>, len(s) + <span class="str">1</span>):
+            <span class="comment"># Take one digit: 1 through 9</span>
+            <span class="kw">if</span> s[i - <span class="str">1</span>] != <span class="str">"0"</span>:
+                dp[i] += dp[i - <span class="str">1</span>]
+
+            <span class="comment"># Take two digits: 10 through 26</span>
+            <span class="kw">if</span> i >= <span class="str">2</span> <span class="kw">and</span> <span class="str">"10"</span> <= s[i - <span class="str">2</span>:i] <= <span class="str">"26"</span>:
+                dp[i] += dp[i - <span class="str">2</span>]
+
+        <span class="kw">return</span> dp[len(s)]</code></pre>
+        </div>
+        <div class="code-notes">
+          <div class="code-note"><b>1</b><div><h3>Give the empty prefix one way</h3><p><code>dp[0] = 1</code> is the starting path. It lets the first valid letter contribute one solution.</p></div></div>
+          <div class="code-note"><b>2</b><div><h3>Try the one-digit door</h3><p>If the current character is not zero, every path at <code>dp[i-1]</code> can extend through it.</p></div></div>
+          <div class="code-note"><b>3</b><div><h3>Try the two-digit door</h3><p>If the pair is 10–26, every path at <code>dp[i-2]</code> can extend through that pair.</p></div></div>
+          <div class="code-note"><b>4</b><div><h3>Return the last cell</h3><p>It represents the entire string, so it contains the total number of valid decodings.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="quiz">
+      <div class="kicker" style="color:var(--lime)">Quick check</div>
+      <h2>How many ways can “1210” be decoded?</h2>
+      <p>Remember: a zero must be part of 10 or 20.</p>
+      <div class="quiz-options"><button class="quiz-option" data-answer="wrong">1</button><button class="quiz-option" data-answer="correct">2</button><button class="quiz-option" data-answer="wrong">3</button><button class="quiz-option" data-answer="wrong">4</button></div>
+      <div id="quizFeedback" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer>Built for learning: rules → visual state → code. Try changing the input and stepping through slowly.</footer>
+
+  <script>
+    const alphabet = document.getElementById('alphabet');
+    for (let i = 1; i <= 26; i++) {
+      alphabet.insertAdjacentHTML('beforeend', `<div class="letter"><b>${i}</b> ${String.fromCharCode(64 + i)}</div>`);
+    }
+
+    const input = document.getElementById('decodeInput');
+    const error = document.getElementById('inputError');
+    const dpStrip = document.getElementById('dpStrip');
+    const oneChoice = document.getElementById('oneChoice');
+    const twoChoice = document.getElementById('twoChoice');
+    const formulaBox = document.getElementById('formulaBox');
+    const stepExplanation = document.getElementById('stepExplanation');
+    let state = { s: '226', dp: [1,1,2,3], step: 3 };
+
+    function computeDP(s) {
+      const dp = Array(s.length + 1).fill(0);
+      dp[0] = 1;
+      for (let i = 1; i <= s.length; i++) {
+        if (s[i - 1] !== '0') dp[i] += dp[i - 1];
+        if (i >= 2 && Number(s.slice(i - 2, i)) >= 10 && Number(s.slice(i - 2, i)) <= 26) dp[i] += dp[i - 2];
+      }
+      return dp;
+    }
+
+    function enumerate(s, index = 0, groups = [], out = []) {
+      if (out.length >= 30) return out;
+      if (index === s.length) {
+        out.push({ groups: [...groups], word: groups.map(n => String.fromCharCode(64 + Number(n))).join('') });
+        return out;
+      }
+      if (s[index] !== '0') enumerate(s, index + 1, [...groups, s[index]], out);
+      if (index + 1 < s.length) {
+        const pair = s.slice(index, index + 2);
+        if (Number(pair) >= 10 && Number(pair) <= 26) enumerate(s, index + 2, [...groups, pair], out);
+      }
+      return out;
+    }
+
+    function choiceHTML(kind, token, valid, sourceIndex, amount, reason) {
+      return `<div class="choice-title"><span>${kind}</span><span class="status">${valid ? 'VALID' : 'BLOCKED'}</span></div>
+        <div class="choice-token">${token || '—'}</div>
+        <div class="choice-copy">${reason}</div>
+        <div class="choice-math">${valid ? `add dp[${sourceIndex}] = ${amount}` : 'add nothing'}</div>`;
+    }
+
+    function render() {
+      const { s, dp, step } = state;
+      document.getElementById('answerNumber').textContent = dp[s.length];
+      document.getElementById('answerTitle').textContent = `“${s}” has ${dp[s.length]} valid decoding${dp[s.length] === 1 ? '' : 's'}`;
+      dpStrip.innerHTML = dp.map((value, i) => {
+        const cls = i > step ? 'future' : i === step ? 'current' : '';
+        const prefix = i === 0 ? 'empty' : s.slice(0, i);
+        return `<div class="dp-cell ${cls}"><span class="index">dp[${i}]</span><span class="prefix">${prefix}</span><span class="value">${i <= step ? value : '?'}</span></div>`;
+      }).join('');
+
+      const digit = s[step - 1];
+      const oneValid = digit !== '0';
+      const pair = step >= 2 ? s.slice(step - 2, step) : '';
+      const pairNum = Number(pair);
+      const twoValid = step >= 2 && pairNum >= 10 && pairNum <= 26;
+      oneChoice.className = `choice ${oneValid ? 'valid' : 'invalid'}`;
+      twoChoice.className = `choice ${twoValid ? 'valid' : 'invalid'}`;
+      oneChoice.innerHTML = choiceHTML('1-digit choice', digit, oneValid, step - 1, dp[step - 1], oneValid ? `${digit} maps to ${String.fromCharCode(64 + Number(digit))}.` : '0 has no letter by itself.');
+      let twoReason = step < 2 ? 'There are not two digits yet.' : twoValid ? `${pair} maps to ${String.fromCharCode(64 + pairNum)}.` : pairNum < 10 ? 'A pair cannot start with zero.' : `${pair} is larger than 26.`;
+      twoChoice.innerHTML = choiceHTML('2-digit choice', pair, twoValid, step - 2, step >= 2 ? dp[step - 2] : 0, twoReason);
+
+      const oneAdd = oneValid ? dp[step - 1] : 0;
+      const twoAdd = twoValid ? dp[step - 2] : 0;
+      formulaBox.innerHTML = `dp[${step}] = ${oneAdd} + ${twoAdd}<br><span class="hot">dp[${step}] = ${dp[step]}</span>`;
+      const parts = [];
+      if (oneValid) parts.push(`<strong>${dp[step - 1]} path${dp[step - 1] === 1 ? '' : 's'}</strong> can append the letter for <code>${digit}</code>`);
+      if (twoValid) parts.push(`<strong>${dp[step - 2]} path${dp[step - 2] === 1 ? '' : 's'}</strong> can append the letter for <code>${pair}</code>`);
+      stepExplanation.innerHTML = parts.length ? `For prefix <code>“${s.slice(0, step)}”</code>, ${parts.join(' and ')}. Add them to get <strong>${dp[step]}</strong>.` : `Neither choice can form a letter, so this prefix has <strong>0</strong> valid paths.`;
+      document.getElementById('stepCount').textContent = `STEP ${step} / ${s.length}`;
+      document.getElementById('prevBtn').disabled = step <= 1;
+      document.getElementById('nextBtn').disabled = step >= s.length;
+      setTimeout(() => dpStrip.querySelector('.current')?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
+    }
+
+    function renderPaths(s) {
+      const paths = enumerate(s);
+      const total = state.dp[s.length];
+      document.getElementById('pathCount').textContent = `${total} total`;
+      const list = document.getElementById('pathList');
+      if (!paths.length) {
+        list.innerHTML = '<div class="too-many">No path reaches the end. At some position, every possible grouping is blocked.</div>';
+      } else {
+        list.innerHTML = paths.map(p => `<div class="path-card"><div class="grouping">${p.groups.map(g => `<span class="group-chip">${g}</span>`).join('')}</div><div class="decoded">${p.word}</div></div>`).join('') + (total > 30 ? '<div class="too-many">Showing the first 30 paths.</div>' : '');
+      }
+    }
+
+    function run(value = input.value) {
+      const s = value.trim();
+      error.textContent = '';
+      if (!/^\d+$/.test(s)) { error.textContent = 'Please enter digits only.'; return; }
+      if (s.length > 12) { error.textContent = 'Keep the example to 12 digits or fewer.'; return; }
+      input.value = s;
+      state = { s, dp: computeDP(s), step: 1 };
+      document.querySelectorAll('.preset').forEach(b => b.classList.toggle('active', b.dataset.value === s));
+      render();
+      renderPaths(s);
+    }
+
+    document.getElementById('runBtn').addEventListener('click', () => run());
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+    input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 12); error.textContent = ''; });
+    document.querySelectorAll('.preset').forEach(button => button.addEventListener('click', () => run(button.dataset.value)));
+    document.getElementById('prevBtn').addEventListener('click', () => { if (state.step > 1) { state.step--; render(); } });
+    document.getElementById('nextBtn').addEventListener('click', () => { if (state.step < state.s.length) { state.step++; render(); } });
+
+    document.querySelectorAll('.quiz-option').forEach(button => button.addEventListener('click', () => {
+      document.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('correct', 'wrong'));
+      const correct = button.dataset.answer === 'correct';
+      button.classList.add(correct ? 'correct' : 'wrong');
+      document.getElementById('quizFeedback').innerHTML = correct
+        ? 'Correct! The paths are <code>1 | 2 | 10 → ABJ</code> and <code>12 | 10 → LJ</code>.'
+        : 'Not quite. The final zero must join the preceding 1, so end both paths with <code>10</code>.';
+    }));
+
+    render();
+    renderPaths('226');
+  </script>
+</body>
+</html>
