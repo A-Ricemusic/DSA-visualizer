@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   ArrowRight, BookOpen, BrainCircuit, Check, ChevronLeft, ChevronRight,
-  CircleHelp, Clock3, Code2, Flame, LayoutDashboard, Lightbulb,
+  CircleHelp, Clock3, Code2, Flame, GitBranch, LayoutDashboard, Lightbulb,
   Play, RotateCcw, Sparkles, Target, Trophy, X
 } from 'lucide-react'
 import './styles.css'
 import './curriculum.css'
+import AlienVisualizer from './AlienVisualizer'
 
 const problems = [
   {
@@ -199,13 +200,14 @@ function App() {
       {view === 'dashboard' && <Dashboard progress={progress} start={start} />}
       {view === 'practice' && <Practice problem={selected} complete={complete} goHome={() => setView('dashboard')} />}
       {view === 'review' && <Review problems={problems} progress={progress} start={start} />}
+      {view === 'alien' && <AlienVisualizer />}
     </main>
   </div>
 }
 
 function Sidebar({ view, setView, progress }) {
   const items = [
-    ['dashboard', LayoutDashboard, 'Dashboard'], ['practice', Code2, 'Practice'], ['review', RotateCcw, 'Review queue']
+    ['dashboard', LayoutDashboard, 'Dashboard'], ['practice', Code2, 'Practice'], ['alien', GitBranch, 'Graph visualizer'], ['review', RotateCcw, 'Review queue']
   ]
   return <aside className="sidebar">
     <button className="brand" onClick={() => setView('dashboard')} aria-label="Statecraft home">
